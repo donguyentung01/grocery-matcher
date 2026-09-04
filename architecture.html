@@ -1,0 +1,488 @@
+<title>Grocery Matcher Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#F5F6F9;
+    --surface:#FFFFFF;
+    --surface-2:#ECEFF4;
+    --ink:#1A1F29;
+    --ink-soft:#3C4353;
+    --muted:#667085;
+    --line:#D7DAE2;
+    --line-strong:#B9BFCC;
+    --accent:#B8661C;
+    --accent-soft:#F3E3D2;
+    --accent-ink:#7A4413;
+    --code-bg:#ECEFF4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1218;
+      --surface:#161B24;
+      --surface-2:#1B212C;
+      --ink:#E7EAF0;
+      --ink-soft:#C7CCDA;
+      --muted:#8E96A8;
+      --line:#262D3B;
+      --line-strong:#333C4E;
+      --accent:#E0913F;
+      --accent-soft:#3A2A18;
+      --accent-ink:#F0B472;
+      --code-bg:#1B212C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1218;
+    --surface:#161B24;
+    --surface-2:#1B212C;
+    --ink:#E7EAF0;
+    --ink-soft:#C7CCDA;
+    --muted:#8E96A8;
+    --line:#262D3B;
+    --line-strong:#333C4E;
+    --accent:#E0913F;
+    --accent-soft:#3A2A18;
+    --accent-ink:#F0B472;
+    --code-bg:#1B212C;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace; }
+
+  .page{
+    max-width:1240px;
+    margin:0 auto;
+    padding:56px 32px 80px;
+  }
+
+  /* ---------- header ---------- */
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--accent-ink);
+    margin:0 0 14px;
+  }
+  h1{
+    font-size:clamp(2.4rem, 5vw, 3.4rem);
+    font-weight:700;
+    letter-spacing:-0.02em;
+    margin:0 0 14px;
+    text-wrap:balance;
+  }
+  .dek{
+    max-width:640px;
+    font-size:18px;
+    color:var(--ink-soft);
+    margin:0 0 32px;
+    text-wrap:balance;
+  }
+  .factrow{
+    list-style:none;
+    display:flex;
+    flex-wrap:wrap;
+    gap:28px;
+    margin:0 0 8px;
+    padding:20px 0 0;
+    border-top:1px solid var(--line);
+  }
+  .factrow li{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .factrow .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:20px;
+    font-weight:600;
+    color:var(--ink);
+  }
+
+  /* ---------- sections ---------- */
+  section{ margin-top:64px; }
+  h2{
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+  }
+  .section-note{
+    font-size:14px;
+    color:var(--muted);
+    margin:0 0 24px;
+    max-width:640px;
+  }
+
+  figure{ margin:0; }
+  .diagram-scroll{
+    overflow-x:auto;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px 16px;
+  }
+  svg.diagram{
+    display:block;
+    min-width:960px;
+    width:100%;
+    height:auto;
+  }
+  figcaption{
+    max-width:680px;
+    font-size:14px;
+    color:var(--muted);
+    margin:14px 2px 0;
+  }
+  figcaption code{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    background:var(--code-bg);
+    padding:1px 5px;
+    border-radius:4px;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- svg node styling (via CSS classes referenced in the SVG) ---------- */
+  .box{ fill:var(--surface); stroke:var(--line-strong); stroke-width:1.5; }
+  .box-title{ fill:var(--ink); font-weight:600; }
+  .box-sub{ fill:var(--muted); font-weight:400; }
+  .box-accent{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.75; }
+  .box-accent .box-title{ fill:var(--accent-ink); }
+  .lane-line{ stroke:var(--ink-soft); stroke-width:1.6; fill:none; }
+  .lane-line-muted{ stroke:var(--muted); stroke-width:1.4; fill:none; stroke-dasharray:5 4; }
+  .lane-line-accent{ stroke:var(--accent); stroke-width:1.8; fill:none; }
+  .edge-label{ fill:var(--muted); }
+  .edge-label-accent{ fill:var(--accent-ink); font-weight:600; }
+  .node-label{ fill:var(--ink-soft); font-size:11px; }
+
+  /* ---------- spec / reference ---------- */
+  .spec-grid{
+    display:grid;
+    grid-template-columns:minmax(320px, 420px) 1fr;
+    gap:40px;
+    align-items:start;
+  }
+  @media (max-width: 780px){
+    .spec-grid{ grid-template-columns:1fr; }
+  }
+  table.params{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+  }
+  table.params th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    font-weight:600;
+    padding:0 12px 8px 0;
+    border-bottom:1px solid var(--line-strong);
+  }
+  table.params td{
+    padding:9px 12px 9px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--ink-soft);
+  }
+  table.params tr:last-child td{ border-bottom:none; }
+  table.params td.val{
+    font-family:'IBM Plex Mono', monospace;
+    font-variant-numeric:tabular-nums;
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  .attributes h3{
+    font-size:14px;
+    font-weight:600;
+    margin:0 0 12px;
+    color:var(--ink-soft);
+  }
+  ul.chips{
+    list-style:none;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:0;
+    padding:0;
+  }
+  ul.chips li{
+    font-size:12.5px;
+    padding:6px 11px;
+    border:1px solid var(--line-strong);
+    border-radius:5px;
+    background:var(--surface-2);
+    color:var(--ink-soft);
+  }
+
+  footer.colophon{
+    margin-top:72px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <p class="eyebrow mono">matcher/ pipeline</p>
+    <h1>Grocery Matcher</h1>
+    <p class="dek">How two grocery catalogs get reconciled into one matched row per product — cheap, wide retrieval first; one expensive, structured judgment call last.</p>
+    <ul class="factrow">
+      <li><span class="num">166&nbsp;MB</span>Store&nbsp;A CSV</li>
+      <li><span class="num">67&nbsp;MB</span>Store&nbsp;B CSV</li>
+      <li><span class="num">3</span>retrieval paths</li>
+      <li><span class="num">&le;20</span>candidates per GPT call</li>
+      <li><span class="num">13</span>identity attributes checked</li>
+    </ul>
+  </header>
+
+  <section>
+    <h2>End-to-end flow</h2>
+    <p class="section-note">Store B is embedded and indexed once, up front. Store A never gets its own index — it streams through in batches, querying Store B's index three different ways before a single GPT call adjudicates the merged candidates.</p>
+    <figure>
+      <div class="diagram-scroll">
+        <svg class="diagram" viewBox="0 0 1220 470" role="img" aria-label="Store B is normalized and indexed once via exact-name hashing, TF-IDF, and a FAISS embedding index. Store A is normalized and batched, then queried against all three indices. Matched candidates are merged and deduplicated, then sent to a GPT adjudicator, which accepts or rejects each one before writing output.csv.">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0L10,5L0,10z" style="fill:var(--ink-soft)"/>
+            </marker>
+            <marker id="a1-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0L10,5L0,10z" style="fill:var(--accent)"/>
+            </marker>
+            <marker id="a1-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0L10,5L0,10z" style="fill:var(--muted)"/>
+            </marker>
+          </defs>
+
+          <!-- lane labels -->
+          <text x="20" y="35" class="node-label mono" font-size="11" letter-spacing="0.06em">STORE B &middot; INDEXED ONCE</text>
+          <text x="20" y="335" class="node-label mono" font-size="11" letter-spacing="0.06em">STORE A &middot; STREAMED IN BATCHES</text>
+
+          <!-- B1 -->
+          <rect class="box" x="20" y="55" width="150" height="70" rx="6"/>
+          <text x="95" y="86" text-anchor="middle" class="box-title" font-size="13">Store B CSV</text>
+          <text x="95" y="104" text-anchor="middle" class="box-sub mono" font-size="11">67 MB</text>
+          <line class="lane-line" x1="170" y1="90" x2="204" y2="90" marker-end="url(#a1)"/>
+
+          <!-- B2 -->
+          <rect class="box" x="210" y="55" width="150" height="70" rx="6"/>
+          <text x="285" y="86" text-anchor="middle" class="box-title" font-size="13">Normalize</text>
+          <text x="285" y="104" text-anchor="middle" class="box-sub" font-size="10.5">brand &middot; size &middot; category</text>
+          <line class="lane-line" x1="360" y1="90" x2="394" y2="90" marker-end="url(#a1)"/>
+
+          <!-- B3 indices -->
+          <rect class="box" x="400" y="20" width="190" height="140" rx="6"/>
+          <text x="418" y="48" class="box-title" font-size="13">Store B Indices</text>
+          <text x="418" y="72" class="box-sub mono" font-size="11">Exact-name hash</text>
+          <text x="418" y="94" class="box-sub mono" font-size="11">TF-IDF matrix (sparse)</text>
+          <text x="418" y="116" class="box-sub mono" font-size="11">FAISS HNSW &middot; MiniLM</text>
+          <text x="418" y="140" class="box-sub" font-size="10" font-style="italic">built once &middot; cached to disk</text>
+          <line class="lane-line" x1="590" y1="90" x2="624" y2="90" marker-end="url(#a1)"/>
+
+          <!-- A1 -->
+          <rect class="box" x="20" y="345" width="150" height="70" rx="6"/>
+          <text x="95" y="376" text-anchor="middle" class="box-title" font-size="13">Store A CSV</text>
+          <text x="95" y="394" text-anchor="middle" class="box-sub mono" font-size="11">166 MB</text>
+          <line class="lane-line" x1="170" y1="380" x2="204" y2="380" marker-end="url(#a1)"/>
+
+          <!-- A2 -->
+          <rect class="box" x="210" y="345" width="150" height="70" rx="6"/>
+          <text x="285" y="376" text-anchor="middle" class="box-title" font-size="13">Normalize</text>
+          <text x="285" y="394" text-anchor="middle" class="box-sub" font-size="10.5">brand &middot; size &middot; category</text>
+          <line class="lane-line" x1="360" y1="380" x2="394" y2="380" marker-end="url(#a1)"/>
+
+          <!-- A3 batch -->
+          <rect class="box" x="400" y="345" width="190" height="70" rx="6"/>
+          <text x="495" y="376" text-anchor="middle" class="box-title" font-size="13">Batch</text>
+          <text x="495" y="394" text-anchor="middle" class="box-sub mono" font-size="11">1,024 items</text>
+
+          <!-- three query lines: A3 (y345) up to B3 (y160) -->
+          <line class="lane-line" x1="440" y1="345" x2="440" y2="164" marker-end="url(#a1)"/>
+          <text x="446" y="300" class="edge-label mono" font-size="10.5">exact match</text>
+
+          <line class="lane-line" x1="505" y1="345" x2="505" y2="164" marker-end="url(#a1)"/>
+          <text x="511" y="250" class="edge-label mono" font-size="10.5">tf&#8209;idf top&#8209;5</text>
+
+          <line class="lane-line" x1="565" y1="345" x2="565" y2="164" marker-end="url(#a1)"/>
+          <text x="571" y="200" class="edge-label mono" font-size="10.5">embedding top&#8209;5</text>
+
+          <!-- B3 -> Merge -->
+          <line class="lane-line" x1="590" y1="90" x2="590" y2="90"/>
+          <line class="lane-line" x1="590" y1="90" x2="624" y2="90" marker-end="url(#a1)"/>
+
+          <!-- Merge -->
+          <rect class="box" x="630" y="45" width="170" height="90" rx="6"/>
+          <text x="715" y="80" text-anchor="middle" class="box-title" font-size="13">Merge + dedupe</text>
+          <text x="715" y="99" text-anchor="middle" class="box-sub mono" font-size="11">&le; 20 candidates</text>
+          <line class="lane-line" x1="800" y1="90" x2="824" y2="90" marker-end="url(#a1)"/>
+
+          <!-- GPT accent -->
+          <rect class="box box-accent" x="830" y="25" width="190" height="130" rx="6"/>
+          <text x="925" y="55" text-anchor="middle" class="box-title" font-size="13.5">GPT Adjudicator</text>
+          <text x="925" y="76" text-anchor="middle" class="box-sub" font-size="10.5">13-attribute structured check</text>
+          <text x="925" y="93" text-anchor="middle" class="box-sub" font-size="10.5">temperature = 0 &middot; JSON mode</text>
+          <text x="925" y="118" text-anchor="middle" class="box-sub mono" font-size="9.5" font-style="italic">cache key: sha256(prompt)</text>
+
+          <!-- accept -->
+          <line class="lane-line-accent" x1="1020" y1="72" x2="1044" y2="72" marker-end="url(#a1-accent)"/>
+          <text x="1032" y="60" text-anchor="middle" class="edge-label-accent mono" font-size="10.5">accept</text>
+
+          <!-- output -->
+          <rect class="box" x="1050" y="47" width="150" height="70" rx="6"/>
+          <text x="1125" y="76" text-anchor="middle" class="box-title mono" font-size="11.5">output.csv</text>
+          <text x="1125" y="94" text-anchor="middle" class="box-sub mono" font-size="10">+ _submission.csv</text>
+
+          <!-- reject -->
+          <path class="lane-line-muted" d="M1020,120 L1040,120 L1040,236 L1076,236" marker-end="url(#a1-muted)"/>
+          <circle cx="1084" cy="236" r="4" style="fill:var(--muted)"/>
+          <text x="900" y="252" text-anchor="start" class="edge-label mono" font-size="10.5">reject &rarr; discarded (None)</text>
+
+        </svg>
+      </div>
+      <figcaption>Store B's three indices are built once in <code>CandidateRetriever.__init__</code>. Each Store A batch queries all three; results merge into a deduplicated candidate set of at most 20, which <code>GptAdjudicator.adjudicate</code> resolves to at most one accepted match.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>The adjudication gate</h2>
+    <p class="section-note">GPT's <code>decision</code> field is advisory, not final. The pipeline independently checks four conditions on the structured response — any single failure rejects the match, regardless of what the model claimed.</p>
+    <figure>
+      <div class="diagram-scroll">
+        <svg class="diagram" viewBox="0 0 1110 480" role="img" aria-label="GPT's structured JSON response is checked against four conditions: the selected ID must be one of the offered candidates, the attributes object must have exactly the thirteen expected keys, every value must be one of four allowed statuses, and no attribute may equal different. All four must pass for the pipeline to accept the match; any failure rejects it.">
+          <defs>
+            <marker id="b1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0L10,5L0,10z" style="fill:var(--ink-soft)"/>
+            </marker>
+            <marker id="b1-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0L10,5L0,10z" style="fill:var(--accent)"/>
+            </marker>
+            <marker id="b1-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0L10,5L0,10z" style="fill:var(--muted)"/>
+            </marker>
+          </defs>
+
+          <!-- input -->
+          <rect class="box" x="30" y="195" width="210" height="90" rx="6"/>
+          <text x="135" y="228" text-anchor="middle" class="box-title mono" font-size="12">GPT response</text>
+          <text x="135" y="248" text-anchor="middle" class="box-sub mono" font-size="10.5">decision, selected_id,</text>
+          <text x="135" y="264" text-anchor="middle" class="box-sub mono" font-size="10.5">attributes&#123;13&#125;</text>
+
+          <!-- fan-out lines -->
+          <line class="lane-line" x1="240" y1="235" x2="322" y2="60" marker-end="url(#b1)"/>
+          <line class="lane-line" x1="240" y1="238" x2="322" y2="180" marker-end="url(#b1)"/>
+          <line class="lane-line" x1="240" y1="242" x2="322" y2="300" marker-end="url(#b1)"/>
+          <line class="lane-line" x1="240" y1="245" x2="322" y2="420" marker-end="url(#b1)"/>
+
+          <!-- check 1 -->
+          <rect class="box" x="330" y="20" width="270" height="80" rx="6"/>
+          <text x="465" y="52" text-anchor="middle" class="box-title" font-size="12">selected_id is one of</text>
+          <text x="465" y="70" text-anchor="middle" class="box-title" font-size="12">the offered candidates</text>
+
+          <!-- check 2 -->
+          <rect class="box" x="330" y="140" width="270" height="80" rx="6"/>
+          <text x="465" y="172" text-anchor="middle" class="box-title" font-size="12">attributes has exactly</text>
+          <text x="465" y="190" text-anchor="middle" class="box-title" font-size="12">the 13 expected keys</text>
+
+          <!-- check 3 -->
+          <rect class="box" x="330" y="260" width="270" height="80" rx="6"/>
+          <text x="465" y="292" text-anchor="middle" class="box-title" font-size="12">every value &isin; &#123;same, different,</text>
+          <text x="465" y="310" text-anchor="middle" class="box-title" font-size="12">unknown, not_applicable&#125;</text>
+
+          <!-- check 4 -->
+          <rect class="box" x="330" y="380" width="270" height="80" rx="6"/>
+          <text x="465" y="412" text-anchor="middle" class="box-title" font-size="12">no attribute equals</text>
+          <text x="465" y="430" text-anchor="middle" class="box-title" font-size="12">&lsquo;different&rsquo;</text>
+
+          <!-- converge lines -->
+          <line class="lane-line" x1="600" y1="60" x2="674" y2="228" marker-end="url(#b1)"/>
+          <line class="lane-line" x1="600" y1="180" x2="674" y2="234" marker-end="url(#b1)"/>
+          <line class="lane-line" x1="600" y1="300" x2="674" y2="246" marker-end="url(#b1)"/>
+          <line class="lane-line" x1="600" y1="420" x2="674" y2="252" marker-end="url(#b1)"/>
+
+          <!-- AND node -->
+          <rect class="box box-accent" x="680" y="190" width="140" height="100" rx="6"/>
+          <text x="750" y="230" text-anchor="middle" class="box-title" font-size="14">ALL PASS?</text>
+          <text x="750" y="250" text-anchor="middle" class="box-sub" font-size="9.5">pipeline enforces this,</text>
+          <text x="750" y="263" text-anchor="middle" class="box-sub" font-size="9.5">not the model</text>
+
+          <!-- accept -->
+          <line class="lane-line-accent" x1="820" y1="215" x2="924" y2="132" marker-end="url(#b1-accent)"/>
+          <text x="855" y="180" text-anchor="middle" class="edge-label-accent mono" font-size="11">yes</text>
+          <rect class="box box-accent" x="930" y="92" width="150" height="80" rx="6"/>
+          <text x="1005" y="124" text-anchor="middle" class="box-title" font-size="13">Accept</text>
+          <text x="1005" y="143" text-anchor="middle" class="box-sub" font-size="10">&rarr; write output row</text>
+
+          <!-- reject -->
+          <path class="lane-line-muted" d="M820,268 L924,332" marker-end="url(#b1-muted)"/>
+          <text x="855" y="320" text-anchor="middle" class="edge-label mono" font-size="11">no</text>
+          <rect class="box" x="930" y="292" width="150" height="80" rx="6"/>
+          <text x="1005" y="324" text-anchor="middle" class="box-title" font-size="13">Reject</text>
+          <text x="1005" y="343" text-anchor="middle" class="box-sub" font-size="10">&rarr; None (discarded)</text>
+
+        </svg>
+      </div>
+      <figcaption>From <code>GptAdjudicator.adjudicate</code> — the model proposes; four deterministic checks dispose. A candidate marked <code>unknown</code> on any attribute still passes, which is why an under-specified size can slip through even here.</figcaption>
+    </figure>
+  </section>
+
+  <section class="spec">
+    <h2>Reference</h2>
+    <p class="section-note">The knobs that shape recall upstream and precision downstream.</p>
+    <div class="spec-grid">
+      <table class="params">
+        <thead>
+          <tr><th>Parameter</th><th>Default</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>TF-IDF candidates</td><td class="val">5</td></tr>
+          <tr><td>TF-IDF min score</td><td class="val">0.15</td></tr>
+          <tr><td>Embedding candidates</td><td class="val">5</td></tr>
+          <tr><td>Embedding min score</td><td class="val">0.50</td></tr>
+          <tr><td>Candidates offered to GPT</td><td class="val">&le; 20</td></tr>
+          <tr><td>Store A batch size</td><td class="val">1,024</td></tr>
+          <tr><td>GPT concurrency</td><td class="val">50</td></tr>
+          <tr><td>Max GPT calls</td><td class="val">250,000</td></tr>
+          <tr><td>Embedding model</td><td class="val">all&#8209;MiniLM&#8209;L6&#8209;v2</td></tr>
+        </tbody>
+      </table>
+
+      <div class="attributes">
+        <h3>13 identity attributes compared per candidate</h3>
+        <ul class="chips">
+          <li>Product type / subtype</li>
+          <li>Form / format</li>
+          <li>Variant / model / line</li>
+          <li>Flavor / scent</li>
+          <li>Key ingredient / material</li>
+          <li>Strength / concentration</li>
+          <li>Intended use / function</li>
+          <li>Target user / species / age</li>
+          <li>Compatibility / application</li>
+          <li>Dietary / processing claims</li>
+          <li>Color / shade / pattern</li>
+          <li>Bundle composition</li>
+          <li>Functional size / package configuration</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="colophon">matcher/pipeline.py &middot; retrieval.py &middot; gpt.py &middot; normalize.py &middot; io.py</footer>
+
+</div>

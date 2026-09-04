@@ -1,0 +1,24 @@
+# Datasets (too large for git; place locally before running)
+grocery_store_a_items_final.csv
+grocery_store_b_items_final.csv
+
+# Generated outputs (output.csv is committed as a sample result)
+output_submission.csv
+
+# Credentials
+openai_creds*.yaml
+*.env
+
+# Cache
+cache/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Claude Code runtime state
+.claude/scheduled_tasks.lock

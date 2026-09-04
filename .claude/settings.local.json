@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//opt/homebrew/opt/node/**)",
+      "Bash(/opt/homebrew/opt/node/bin/node --version)",
+      "Bash(brew list *)"
+    ]
+  }
+}
