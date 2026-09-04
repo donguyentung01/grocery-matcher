@@ -1,0 +1,6 @@
+# Copy this file to openai_creds.yaml and fill in your own values.
+# openai_creds.yaml is gitignored, so your real key never gets committed.
+openai:
+  endpoint: https://api.openai.com/v1   # or an Azure OpenAI endpoint
+  api_key: sk-...
+  deployment_name: gpt-4o-mini          # model name (OpenAI) or deployment name (Azure)

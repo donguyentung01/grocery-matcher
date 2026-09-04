@@ -32,7 +32,7 @@ def parse_args() -> MatchConfig:
     parser.add_argument(
         "--credentials",
         type=Path,
-        default=Path("openai_creds (1).yaml"),
+        default=Path("openai_creds.yaml"),
     )
     parser.add_argument(
         "--embedding-model",

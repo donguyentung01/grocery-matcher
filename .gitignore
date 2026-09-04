@@ -5,8 +5,8 @@ grocery_store_b_items_final.csv
 # Generated outputs (output.csv is committed as a sample result)
 output_submission.csv
 
-# Credentials
-openai_creds*.yaml
+# Credentials (openai_creds.example.yaml is a template and stays tracked)
+openai_creds.yaml
 *.env
 
 # Cache
